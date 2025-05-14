@@ -99,3 +99,19 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Report status calendar styles */
+.rdp-day_completed {
+  background-color: #22c55e !important;
+  color: white !important;
+}
+
+.rdp-day_on-leave {
+  background-color: #ef4444 !important;
+  color: white !important;
+}
+
+.rdp-day_half-day {
+  background-color: #f59e0b !important;
+  color: white !important;
+}

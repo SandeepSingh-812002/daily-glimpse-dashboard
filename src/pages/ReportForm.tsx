@@ -1,6 +1,5 @@
-
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,8 +17,13 @@ import { v4 as uuidv4 } from "uuid";
 
 const ReportForm = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { addReport, getReportByDate } = useReports();
-  const [date, setDate] = useState<Date>(new Date());
+  
+  // Get selected date from navigation state or use current date
+  const initialDate = location.state?.selectedDate ? new Date(location.state.selectedDate) : new Date();
+  
+  const [date, setDate] = useState<Date>(initialDate);
   const [isOnLeave, setIsOnLeave] = useState(false);
   const [isHalfDay, setIsHalfDay] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([
@@ -34,6 +38,10 @@ const ReportForm = () => {
   ]);
 
   // Load existing report if available
+  useEffect(() => {
+    loadExistingReport(date);
+  }, [date]);
+
   const loadExistingReport = (date: Date) => {
     const existingReport = getReportByDate(date);
     if (existingReport) {
@@ -220,7 +228,22 @@ const ReportForm = () => {
           </CardContent>
           
           <CardFooter>
-            <Button type="submit" className="w-full sm:w-auto">Submit Report</Button>
+            <div className="flex gap-2 w-full">
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full sm:w-auto"
+                onClick={() => navigate("/dashboard")}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="w-full sm:w-auto"
+              >
+                Submit Report
+              </Button>
+            </div>
           </CardFooter>
         </Card>
       </form>
