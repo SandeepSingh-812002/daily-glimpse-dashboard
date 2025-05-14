@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { TrashX } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TaskItemProps {
@@ -37,7 +37,7 @@ const TaskItem = ({ task, onChange, onDelete, disabled = false, index }: TaskIte
             disabled={disabled}
             className="text-gray-500 hover:text-red-500"
           >
-            <TrashX className="h-5 w-5" />
+            <Trash2 className="h-5 w-5" />
           </Button>
         </div>
 
