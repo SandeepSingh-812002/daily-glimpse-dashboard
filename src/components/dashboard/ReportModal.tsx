@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Report, ReportingTask, FormTask, Task } from "@/types";
-import { Pencil, Trash2, Save, Plus } from "lucide-react";
+import { Pencil, Trash2, Save, Plus, CalendarIcon } from "lucide-react";
 import TaskItem from "@/components/report/TaskItem";
 import { useNavigate } from "react-router-dom";
 import { useReports } from "@/context/ReportContext";
@@ -20,6 +20,9 @@ import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { getTasksAssignedToUser, CURRENT_USER_ID } from "@/data/mockTasks";
 import TaskSelector from "@/components/report/TaskSelector";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface ReportModalProps {
   report: Report | null;
@@ -198,11 +201,42 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
       <DialogContent className="sm:max-w-lg md:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEditMode ? "Edit Report" : "New Report"}: {format(date, "MMMM d, yyyy")}
+            {isEditMode ? "Edit Report" : "New Report"}
+            {isEditMode && `: ${format(date, "MMMM d, yyyy")}`}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Date Picker (only shown for new reports) */}
+          {!isEditMode && (
+            <div className="space-y-2">
+              <Label htmlFor="date">Report Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="date"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={(newDate) => newDate && setDate(newDate)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+
           {/* Leave Status */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
