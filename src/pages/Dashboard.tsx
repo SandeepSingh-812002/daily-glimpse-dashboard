@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMonth, isSameDay } from "date-fns";
-import { Calendar, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useReports } from "@/context/ReportContext";
@@ -17,6 +17,7 @@ const Dashboard = () => {
   const { reports } = useReports();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Get days for the current month
@@ -47,8 +48,8 @@ const Dashboard = () => {
   const getStatusForDay = (date: Date): ReportStatus => {
     const report = getReportForDay(date);
     if (!report) return "none";
-    if (report.isOnLeave) return "on-leave";
-    if (report.isHalfDay) return "half-day";
+    if (report.is_on_leave) return "on-leave";
+    if (report.is_half_day) return "half-day";
     return "completed";
   };
 
@@ -67,26 +68,32 @@ const Dashboard = () => {
 
   const handleDayClick = (date: Date) => {
     const report = getReportForDay(date);
-    if (report) {
-      setSelectedReport(report);
-      setIsModalOpen(true);
-    } else {
-      // Navigate to report form with date pre-selected
-      navigate("/report");
-    }
+    setSelectedDate(date);
+    setSelectedReport(report || null);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedReport(null);
   };
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
-          <Calendar className="h-6 w-6" />
+          <CalendarIcon className="h-6 w-6" />
           <h1 className="text-3xl font-bold">Report Dashboard</h1>
         </div>
-        <Button asChild>
-          <Link to="/report" className="flex items-center gap-1">
-            <Plus className="h-4 w-4" /> New Report
-          </Link>
+        <Button 
+          onClick={() => {
+            setSelectedDate(new Date());
+            setSelectedReport(null);
+            setIsModalOpen(true);
+          }}
+          className="flex items-center gap-1"
+        >
+          <Plus className="h-4 w-4" /> New Report
         </Button>
       </div>
 
@@ -164,13 +171,13 @@ const Dashboard = () => {
                         {dayReport ? (
                           <>
                             <div>
-                              {dayReport.isOnLeave 
+                              {dayReport.is_on_leave 
                                 ? "On Leave" 
-                                : dayReport.isHalfDay 
+                                : dayReport.is_half_day 
                                 ? "Half Day" 
                                 : `${dayReport.tasks.length} Task${dayReport.tasks.length !== 1 ? 's' : ''}`}
                             </div>
-                            {!dayReport.isOnLeave && (
+                            {!dayReport.is_on_leave && (
                               <div>
                                 {dayReport.tasks.filter(t => t.status === "Completed").length} completed
                               </div>
@@ -210,8 +217,9 @@ const Dashboard = () => {
 
       <ReportModal
         report={selectedReport}
+        selectedDate={selectedDate}
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
       />
     </div>
   );
