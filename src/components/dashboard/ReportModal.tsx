@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Report, ReportingTask } from "@/types";
+import { Report, ReportingTask, Task } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2, Save } from "lucide-react";
 import TaskItem from "@/components/report/TaskItem";
@@ -35,15 +35,14 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
   const [date, setDate] = useState<Date>(selectedDate);
   const [isOnLeave, setIsOnLeave] = useState(false);
   const [isHalfDay, setIsHalfDay] = useState(false);
-  const [tasks, setTasks] = useState<ReportingTask[]>([
+  const [tasks, setTasks] = useState<Task[]>([
     {
       id: uuidv4(),
-      reporting_id: "",
-      task_id: uuidv4(),
       description: "",
-      completion_percentage: 0,
+      completionPercentage: 0,
       status: "Pending",
-      created_at: new Date()
+      issuedBy: "",
+      project: "",
     },
   ]);
   
@@ -53,7 +52,19 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
       setDate(new Date(report.date));
       setIsOnLeave(report.is_on_leave);
       setIsHalfDay(report.is_half_day);
-      setTasks(report.tasks);
+      
+      // Convert ReportingTask[] to Task[]
+      const convertedTasks: Task[] = report.tasks.map(task => ({
+        id: task.id,
+        description: task.description,
+        completionPercentage: task.completion_percentage,
+        status: task.status,
+        issuedBy: "", // This field doesn't exist in ReportingTask
+        comment: task.comment,
+        project: task.project,
+      }));
+      
+      setTasks(convertedTasks);
     } else {
       setDate(selectedDate);
       setIsOnLeave(false);
@@ -61,18 +72,17 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
       setTasks([
         {
           id: uuidv4(),
-          reporting_id: "",
-          task_id: uuidv4(),
           description: "",
-          completion_percentage: 0,
+          completionPercentage: 0,
           status: "Pending",
-          created_at: new Date()
+          issuedBy: "",
+          project: "",
         },
       ]);
     }
   }, [report, selectedDate]);
 
-  const handleTaskChange = (updatedTask: ReportingTask) => {
+  const handleTaskChange = (updatedTask: Task) => {
     setTasks(tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)));
   };
 
@@ -81,12 +91,11 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
       ...tasks,
       {
         id: uuidv4(),
-        reporting_id: "",
-        task_id: uuidv4(),
         description: "",
-        completion_percentage: 0,
+        completionPercentage: 0,
         status: "Pending",
-        created_at: new Date()
+        issuedBy: "",
+        project: "",
       },
     ]);
   };
@@ -109,6 +118,19 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
       }
     }
 
+    // Convert Task[] to ReportingTask[]
+    const reportingTasks: ReportingTask[] = tasks.map(task => ({
+      id: task.id,
+      reporting_id: uuidv4(),
+      task_id: task.id,
+      description: task.description,
+      completion_percentage: task.completionPercentage,
+      status: task.status,
+      comment: task.comment,
+      project: task.project,
+      created_at: new Date()
+    }));
+
     const updatedReport: Report = {
       id: report ? report.id : uuidv4(),
       user_id: report ? report.user_id : "current-user", // Replace with actual user ID handling
@@ -116,7 +138,7 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
       is_on_leave: isOnLeave,
       is_half_day: isHalfDay,
       created_at: report ? report.created_at : new Date(),
-      tasks: isOnLeave ? [] : tasks,
+      tasks: isOnLeave ? [] : reportingTasks,
     };
 
     addReport(updatedReport);

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { CalendarIcon, Plus } from "lucide-react";
-import { Report, Task } from "@/types";
+import { Report, Task, ReportingTask } from "@/types";
 import { cn } from "@/lib/utils";
 import { useReports } from "@/context/ReportContext";
 import TaskItem from "@/components/report/TaskItem";
