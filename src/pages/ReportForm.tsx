@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -9,12 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { CalendarIcon, Plus } from "lucide-react";
-import { Report, Task, ReportingTask } from "@/types";
+import { Report, FormTask, ReportingTask } from "@/types";
 import { cn } from "@/lib/utils";
 import { useReports } from "@/context/ReportContext";
 import TaskItem from "@/components/report/TaskItem";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { getTasksAssignedToUser, CURRENT_USER_ID } from "@/data/mockTasks";
+import TaskSelector from "@/components/report/TaskSelector";
 
 const ReportForm = () => {
   const navigate = useNavigate();
@@ -22,7 +24,7 @@ const ReportForm = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [isOnLeave, setIsOnLeave] = useState(false);
   const [isHalfDay, setIsHalfDay] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([
+  const [tasks, setTasks] = useState<FormTask[]>([
     {
       id: uuidv4(),
       description: "",
@@ -30,8 +32,19 @@ const ReportForm = () => {
       status: "Pending",
       issuedBy: "",
       project: "",
+      taskId: undefined,
     },
   ]);
+  
+  // Add state for available tasks
+  const [availableTasks, setAvailableTasks] = useState([]);
+
+  // Fetch available tasks on component mount
+  useEffect(() => {
+    // In a real app, this would be an API call
+    const userTasks = getTasksAssignedToUser(CURRENT_USER_ID);
+    setAvailableTasks(userTasks);
+  }, []);
 
   // Load existing report if available
   const loadExistingReport = (date: Date) => {
@@ -40,15 +53,16 @@ const ReportForm = () => {
       setIsOnLeave(existingReport.is_on_leave);
       setIsHalfDay(existingReport.is_half_day);
       
-      // Convert ReportingTask[] to Task[]
-      const convertedTasks: Task[] = existingReport.tasks.map(task => ({
+      // Convert ReportingTask[] to FormTask[]
+      const convertedTasks: FormTask[] = existingReport.tasks.map(task => ({
         id: task.id,
         description: task.description,
         completionPercentage: task.completion_percentage,
         status: task.status,
-        issuedBy: "",  // This field doesn't exist in ReportingTask, default to empty
+        issuedBy: "",  // This field doesn't exist in ReportingTask
         comment: task.comment,
         project: task.project,
+        taskId: task.original_task_id,
       }));
       
       setTasks(convertedTasks);
@@ -64,6 +78,7 @@ const ReportForm = () => {
           status: "Pending",
           issuedBy: "",
           project: "",
+          taskId: undefined,
         },
       ]);
     }
@@ -76,8 +91,26 @@ const ReportForm = () => {
     }
   };
 
-  const handleTaskChange = (updatedTask: Task) => {
+  const handleTaskChange = (updatedTask: FormTask) => {
     setTasks(tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)));
+  };
+  
+  const handleTaskSelect = (taskId: string, formTaskId: string) => {
+    const selectedTask = availableTasks.find(t => t.id === taskId);
+    
+    if (selectedTask) {
+      setTasks(tasks.map((task) => {
+        if (task.id === formTaskId) {
+          return {
+            ...task,
+            taskId: selectedTask.id,
+            project: selectedTask.title, // Use task title as project name
+            completionPercentage: selectedTask.progress, // Initialize with current progress
+          };
+        }
+        return task;
+      }));
+    }
   };
 
   const addTask = () => {
@@ -90,6 +123,7 @@ const ReportForm = () => {
         status: "Pending",
         issuedBy: "",
         project: "",
+        taskId: undefined,
       },
     ]);
   };
@@ -107,7 +141,7 @@ const ReportForm = () => {
 
     // Validation
     if (!isOnLeave) {
-      const hasEmptyRequiredFields = tasks.some(task => !task.description || !task.issuedBy);
+      const hasEmptyRequiredFields = tasks.some(task => !task.description);
       if (hasEmptyRequiredFields) {
         toast.error("Please fill in all required fields");
         return;
@@ -124,12 +158,13 @@ const ReportForm = () => {
       status: task.status,
       comment: task.comment,
       project: task.project,
-      created_at: new Date()
+      created_at: new Date(),
+      original_task_id: task.taskId, // Store the reference to the original task
     }));
 
     const report: Report = {
       id: uuidv4(),
-      user_id: "current-user", // This could be replaced with actual user ID
+      user_id: CURRENT_USER_ID, // Use current user ID
       date,
       is_on_leave: isOnLeave,
       is_half_day: isHalfDay,
@@ -231,15 +266,25 @@ const ReportForm = () => {
                   </Button>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {tasks.map((task, index) => (
-                    <TaskItem
-                      key={task.id}
-                      task={task}
-                      onChange={handleTaskChange}
-                      onDelete={() => removeTask(task.id)}
-                      index={index}
-                    />
+                    <div key={task.id} className="space-y-4 border-b pb-4 last:border-b-0">
+                      {/* Task Selector */}
+                      <TaskSelector 
+                        tasks={availableTasks}
+                        selectedTaskId={task.taskId}
+                        onSelectTask={(taskId) => handleTaskSelect(taskId, task.id)}
+                      />
+                      
+                      {/* Task Form Fields */}
+                      <TaskItem
+                        key={task.id}
+                        task={task}
+                        onChange={handleTaskChange}
+                        onDelete={() => removeTask(task.id)}
+                        index={index}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>

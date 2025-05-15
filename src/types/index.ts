@@ -1,5 +1,24 @@
 
+export type Quadrant = 1 | 2 | 3 | 4 | 5;
+
 export interface Task {
+  id: string;
+  title: string;
+  notes: string;
+  icon: string;
+  progress: number;
+  createdById: string;
+  createdByName: string;
+  assignedToId: string;
+  assignedToName: string;
+  dueDate: string | null;
+  completed: boolean;
+  quadrant: Quadrant;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FormTask {
   id: string;
   description: string;
   completionPercentage: number;
@@ -7,6 +26,7 @@ export interface Task {
   comment?: string;
   issuedBy: string;
   project?: string;
+  taskId?: string; // Reference to the original task
 }
 
 export interface ReportingTask {
@@ -19,6 +39,7 @@ export interface ReportingTask {
   comment?: string;
   project?: string;
   created_at: Date;
+  original_task_id?: string; // Reference to the task from the database
 }
 
 export interface Report {

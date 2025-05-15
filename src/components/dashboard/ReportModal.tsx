@@ -8,18 +8,18 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Report, ReportingTask, Task } from "@/types";
-import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Save } from "lucide-react";
+import { Report, ReportingTask, FormTask, Task } from "@/types";
+import { Pencil, Trash2, Save, Plus } from "lucide-react";
 import TaskItem from "@/components/report/TaskItem";
 import { useNavigate } from "react-router-dom";
 import { useReports } from "@/context/ReportContext";
 import { useState, useEffect } from "react";
-import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
+import { getTasksAssignedToUser, CURRENT_USER_ID } from "@/data/mockTasks";
+import TaskSelector from "@/components/report/TaskSelector";
 
 interface ReportModalProps {
   report: Report | null;
@@ -30,12 +30,12 @@ interface ReportModalProps {
 
 const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps) => {
   const navigate = useNavigate();
-  const { addReport, deleteReport, getReportByDate } = useReports();
+  const { addReport, deleteReport } = useReports();
   
   const [date, setDate] = useState<Date>(selectedDate);
   const [isOnLeave, setIsOnLeave] = useState(false);
   const [isHalfDay, setIsHalfDay] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([
+  const [tasks, setTasks] = useState<FormTask[]>([
     {
       id: uuidv4(),
       description: "",
@@ -43,8 +43,19 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
       status: "Pending",
       issuedBy: "",
       project: "",
+      taskId: undefined,
     },
   ]);
+  
+  // Add state for available tasks
+  const [availableTasks, setAvailableTasks] = useState<Task[]>([]);
+
+  // Fetch available tasks on component mount
+  useEffect(() => {
+    // In a real app, this would be an API call
+    const userTasks = getTasksAssignedToUser(CURRENT_USER_ID);
+    setAvailableTasks(userTasks);
+  }, []);
   
   // Set initial form values when report or selectedDate changes
   useEffect(() => {
@@ -53,8 +64,8 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
       setIsOnLeave(report.is_on_leave);
       setIsHalfDay(report.is_half_day);
       
-      // Convert ReportingTask[] to Task[]
-      const convertedTasks: Task[] = report.tasks.map(task => ({
+      // Convert ReportingTask[] to FormTask[]
+      const convertedTasks: FormTask[] = report.tasks.map(task => ({
         id: task.id,
         description: task.description,
         completionPercentage: task.completion_percentage,
@@ -62,6 +73,7 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
         issuedBy: "", // This field doesn't exist in ReportingTask
         comment: task.comment,
         project: task.project,
+        taskId: task.original_task_id,
       }));
       
       setTasks(convertedTasks);
@@ -77,12 +89,13 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
           status: "Pending",
           issuedBy: "",
           project: "",
+          taskId: undefined,
         },
       ]);
     }
   }, [report, selectedDate]);
 
-  const handleTaskChange = (updatedTask: Task) => {
+  const handleTaskChange = (updatedTask: FormTask) => {
     setTasks(tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)));
   };
 
@@ -96,6 +109,7 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
         status: "Pending",
         issuedBy: "",
         project: "",
+        taskId: undefined,
       },
     ]);
   };
@@ -105,6 +119,24 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
       setTasks(tasks.filter((task) => task.id !== id));
     } else {
       toast.error("At least one task is required");
+    }
+  };
+  
+  const handleTaskSelect = (taskId: string, formTaskId: string) => {
+    const selectedTask = availableTasks.find(t => t.id === taskId);
+    
+    if (selectedTask) {
+      setTasks(tasks.map((task) => {
+        if (task.id === formTaskId) {
+          return {
+            ...task,
+            taskId: selectedTask.id,
+            project: selectedTask.title, // Use task title as project name
+            completionPercentage: selectedTask.progress, // Initialize with current progress
+          };
+        }
+        return task;
+      }));
     }
   };
 
@@ -118,7 +150,7 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
       }
     }
 
-    // Convert Task[] to ReportingTask[]
+    // Convert FormTask[] to ReportingTask[]
     const reportingTasks: ReportingTask[] = tasks.map(task => ({
       id: task.id,
       reporting_id: uuidv4(),
@@ -128,12 +160,13 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
       status: task.status,
       comment: task.comment,
       project: task.project,
-      created_at: new Date()
+      created_at: new Date(),
+      original_task_id: task.taskId, // Store the reference to the original task
     }));
 
     const updatedReport: Report = {
       id: report ? report.id : uuidv4(),
-      user_id: report ? report.user_id : "current-user", // Replace with actual user ID handling
+      user_id: report ? report.user_id : CURRENT_USER_ID, // Use current user ID
       date,
       is_on_leave: isOnLeave,
       is_half_day: isHalfDay,
@@ -216,19 +249,29 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
                   onClick={addTask}
                   className="flex items-center gap-1"
                 >
-                  <span className="h-4 w-4">+</span> Add Task
+                  <Plus className="h-4 w-4" /> Add Task
                 </Button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {tasks.map((task, index) => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    onChange={handleTaskChange}
-                    onDelete={() => removeTask(task.id)}
-                    index={index}
-                  />
+                  <div key={task.id} className="space-y-4 border-b pb-4 last:border-b-0">
+                    {/* Task Selector */}
+                    <TaskSelector 
+                      tasks={availableTasks}
+                      selectedTaskId={task.taskId}
+                      onSelectTask={(taskId) => handleTaskSelect(taskId, task.id)}
+                    />
+                    
+                    {/* Task Form Fields */}
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      onChange={handleTaskChange}
+                      onDelete={() => removeTask(task.id)}
+                      index={index}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
