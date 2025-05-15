@@ -1,4 +1,14 @@
 
+export interface Task {
+  id: string;
+  description: string;
+  completionPercentage: number;
+  status: "Pending" | "In Progress" | "Completed";
+  comment?: string;
+  issuedBy: string;
+  project?: string;
+}
+
 export interface ReportingTask {
   id: string;
   reporting_id: string;

@@ -37,9 +37,21 @@ const ReportForm = () => {
   const loadExistingReport = (date: Date) => {
     const existingReport = getReportByDate(date);
     if (existingReport) {
-      setIsOnLeave(existingReport.isOnLeave);
-      setIsHalfDay(existingReport.isHalfDay);
-      setTasks(existingReport.tasks);
+      setIsOnLeave(existingReport.is_on_leave);
+      setIsHalfDay(existingReport.is_half_day);
+      
+      // Convert ReportingTask[] to Task[]
+      const convertedTasks: Task[] = existingReport.tasks.map(task => ({
+        id: task.id,
+        description: task.description,
+        completionPercentage: task.completion_percentage,
+        status: task.status,
+        issuedBy: "",  // This field doesn't exist in ReportingTask, default to empty
+        comment: task.comment,
+        project: task.project,
+      }));
+      
+      setTasks(convertedTasks);
     } else {
       // Reset form for new date
       setIsOnLeave(false);
@@ -102,12 +114,27 @@ const ReportForm = () => {
       }
     }
 
+    // Convert Task[] to ReportingTask[]
+    const reportingTasks: ReportingTask[] = tasks.map(task => ({
+      id: task.id,
+      reporting_id: uuidv4(),
+      task_id: task.id,
+      description: task.description,
+      completion_percentage: task.completionPercentage,
+      status: task.status,
+      comment: task.comment,
+      project: task.project,
+      created_at: new Date()
+    }));
+
     const report: Report = {
       id: uuidv4(),
+      user_id: "current-user", // This could be replaced with actual user ID
       date,
-      isOnLeave,
-      isHalfDay,
-      tasks: isOnLeave ? [] : tasks,
+      is_on_leave: isOnLeave,
+      is_half_day: isHalfDay,
+      created_at: new Date(),
+      tasks: isOnLeave ? [] : reportingTasks,
     };
 
     addReport(report);
