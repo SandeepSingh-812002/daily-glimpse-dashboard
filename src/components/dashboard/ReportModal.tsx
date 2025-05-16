@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -29,9 +28,11 @@ interface ReportModalProps {
   selectedDate: Date;
   isOpen: boolean;
   onClose: () => void;
+  disableEditing?: boolean;
+  employeeId?: string | null;
 }
 
-const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps) => {
+const ReportModal = ({ report, selectedDate, isOpen, onClose, disableEditing = false, employeeId = null }: ReportModalProps) => {
   const navigate = useNavigate();
   const { addReport, deleteReport } = useReports();
   
@@ -169,7 +170,7 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
 
     const updatedReport: Report = {
       id: report ? report.id : uuidv4(),
-      user_id: report ? report.user_id : CURRENT_USER_ID, // Use current user ID
+      user_id: report ? report.user_id : employeeId || CURRENT_USER_ID, // Use employeeId prop if provided
       date,
       is_on_leave: isOnLeave,
       is_half_day: isHalfDay,
@@ -220,6 +221,7 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
                       "w-full justify-start text-left font-normal",
                       !date && "text-muted-foreground"
                     )}
+                    disabled={disableEditing}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {date ? format(date, "PPP") : <span>Pick a date</span>}
@@ -244,11 +246,14 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
                 id="leave"
                 checked={isOnLeave}
                 onCheckedChange={(checked) => {
-                  setIsOnLeave(checked === true);
-                  if (checked) {
-                    setIsHalfDay(false);
+                  if (!disableEditing) {
+                    setIsOnLeave(checked === true);
+                    if (checked) {
+                      setIsHalfDay(false);
+                    }
                   }
                 }}
+                disabled={disableEditing}
               />
               <Label htmlFor="leave" className="font-medium">On Leave</Label>
             </div>
@@ -257,14 +262,16 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
               <Checkbox
                 id="halfday"
                 checked={isHalfDay}
-                disabled={isOnLeave}
+                disabled={isOnLeave || disableEditing}
                 onCheckedChange={(checked) => {
-                  setIsHalfDay(checked === true);
+                  if (!disableEditing) {
+                    setIsHalfDay(checked === true);
+                  }
                 }}
               />
               <Label
                 htmlFor="halfday"
-                className={isOnLeave ? "text-gray-400 font-medium" : "font-medium"}
+                className={(isOnLeave || disableEditing) ? "text-gray-400 font-medium" : "font-medium"}
               >
                 Half Day
               </Label>
@@ -276,26 +283,30 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Tasks</h3>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addTask}
-                  className="flex items-center gap-1"
-                >
-                  <Plus className="h-4 w-4" /> Add Task
-                </Button>
+                {!disableEditing && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addTask}
+                    className="flex items-center gap-1"
+                  >
+                    <Plus className="h-4 w-4" /> Add Task
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-6">
                 {tasks.map((task, index) => (
                   <div key={task.id} className="space-y-4 border-b pb-4 last:border-b-0">
                     {/* Task Selector */}
-                    <TaskSelector 
-                      tasks={availableTasks}
-                      selectedTaskId={task.taskId}
-                      onSelectTask={(taskId) => handleTaskSelect(taskId, task.id)}
-                    />
+                    {!disableEditing && (
+                      <TaskSelector 
+                        tasks={availableTasks}
+                        selectedTaskId={task.taskId}
+                        onSelectTask={(taskId) => handleTaskSelect(taskId, task.id)}
+                      />
+                    )}
                     
                     {/* Task Form Fields */}
                     <TaskItem
@@ -304,6 +315,7 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
                       onChange={handleTaskChange}
                       onDelete={() => removeTask(task.id)}
                       index={index}
+                      disabled={disableEditing}
                     />
                   </div>
                 ))}
@@ -313,7 +325,7 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          {isEditMode ? (
+          {!disableEditing && isEditMode ? (
             <>
               <Button
                 variant="outline"
@@ -337,6 +349,14 @@ const ReportModal = ({ report, selectedDate, isOpen, onClose }: ReportModalProps
                 <Trash2 className="h-4 w-4" /> Delete
               </Button>
             </>
+          ) : disableEditing ? (
+            <Button
+              variant="outline"
+              onClick={handleCancel}
+              className="flex items-center gap-1"
+            >
+              Close
+            </Button>
           ) : (
             <>
               <Button
