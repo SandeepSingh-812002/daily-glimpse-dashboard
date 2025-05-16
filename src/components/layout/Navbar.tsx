@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { Calendar, FileText } from "lucide-react";
+import { Calendar, FileText, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Navbar = () => {
@@ -44,6 +44,18 @@ const Navbar = () => {
               >
                 <Calendar className="h-4 w-4" />
                 Dashboard
+              </Link>
+              <Link
+                to="/employees"
+                className={cn(
+                  "px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2",
+                  isActive("/employees")
+                    ? "bg-primary text-white"
+                    : "text-gray-600 hover:text-primary"
+                )}
+              >
+                <Users className="h-4 w-4" />
+                Employees
               </Link>
             </nav>
           </div>
