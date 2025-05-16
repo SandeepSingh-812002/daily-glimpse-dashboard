@@ -21,9 +21,42 @@ const employees = [
 
 // Mock data for today's reports
 const todaysReports = [
-  { id: "1", employeeId: "1", employeeName: "John Doe", title: "Frontend Sprint Progress", timestamp: new Date().setHours(9, 15) },
-  { id: "2", employeeId: "2", employeeName: "Jane Smith", title: "UX Design Updates", timestamp: new Date().setHours(10, 30) },
-  { id: "3", employeeId: "5", employeeName: "Alex Brown", title: "Testing Results", timestamp: new Date().setHours(14, 45) },
+  { 
+    id: "1", 
+    employeeId: "1", 
+    employeeName: "John Doe", 
+    title: "Frontend Sprint Progress", 
+    timestamp: new Date().setHours(9, 15),
+    content: "Completed the implementation of the new login page. Started work on the dashboard components. Will need another day to finish the responsive design aspects.",
+    tasks: [
+      { description: "Login page implementation", status: "Completed", completion: 100 },
+      { description: "Dashboard components", status: "In Progress", completion: 60 }
+    ]
+  },
+  { 
+    id: "2", 
+    employeeId: "2", 
+    employeeName: "Jane Smith", 
+    title: "UX Design Updates", 
+    timestamp: new Date().setHours(10, 30),
+    content: "Finalized the wireframes for the user profile section. Got feedback from the team and made necessary adjustments. Will begin working on the high-fidelity mockups tomorrow.",
+    tasks: [
+      { description: "User profile wireframes", status: "Completed", completion: 100 },
+      { description: "High-fidelity mockups", status: "Pending", completion: 0 }
+    ]
+  },
+  { 
+    id: "3", 
+    employeeId: "5", 
+    employeeName: "Alex Brown", 
+    title: "Testing Results", 
+    timestamp: new Date().setHours(14, 45),
+    content: "Completed the test cases for the authentication flow. Found 3 critical bugs that need to be addressed before release. Will provide more detailed documentation tomorrow.",
+    tasks: [
+      { description: "Authentication test cases", status: "Completed", completion: 100 },
+      { description: "Bug documentation", status: "In Progress", completion: 80 }
+    ]
+  },
 ];
 
 const EmployeeManagement = () => {
@@ -122,41 +155,58 @@ const EmployeeManagement = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {todaysReports.length > 0 ? (
-                    todaysReports.map((report) => (
-                      <TableRow key={report.id}>
-                        <TableCell>{report.employeeName}</TableCell>
-                        <TableCell>{report.title}</TableCell>
-                        <TableCell>{format(new Date(report.timestamp), "h:mm a")}</TableCell>
-                        <TableCell>
-                          <Button 
-                            variant="outline"
-                            onClick={() => navigate(`/dashboard?reportId=${report.id}`)}
-                          >
-                            View Report
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-4">
-                        No reports submitted today
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+              {todaysReports.length > 0 ? (
+                <div className="space-y-6">
+                  {todaysReports.map((report) => (
+                    <Card key={report.id} className="border border-gray-200">
+                      <CardHeader className="bg-gray-50 pb-2">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-lg">{report.title}</CardTitle>
+                            <CardDescription className="flex items-center gap-2">
+                              <span>{report.employeeName}</span>
+                              <span>•</span>
+                              <span>{format(new Date(report.timestamp), "h:mm a")}</span>
+                            </CardDescription>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <div className="space-y-4">
+                          <div>
+                            <p className="text-gray-700">{report.content}</p>
+                          </div>
+                          
+                          <div className="mt-4">
+                            <h4 className="font-medium text-sm mb-2">Tasks:</h4>
+                            <div className="space-y-2">
+                              {report.tasks.map((task, index) => (
+                                <div key={index} className="flex items-center justify-between text-sm border-b pb-2">
+                                  <div className="flex-1">{task.description}</div>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`px-2 py-1 rounded-full text-xs ${
+                                      task.status === "Completed" ? "bg-green-100 text-green-800" :
+                                      task.status === "In Progress" ? "bg-blue-100 text-blue-800" :
+                                      "bg-gray-100 text-gray-800"
+                                    }`}>
+                                      {task.status}
+                                    </span>
+                                    <span className="text-gray-500">{task.completion}%</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No reports submitted today
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
