@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMonth, isSameDay } from "date-fns";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,17 +8,38 @@ import { useReports } from "@/context/ReportContext";
 import { Report, ReportStatus } from "@/types";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import ReportModal from "@/components/dashboard/ReportModal";
 import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { reports } = useReports();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filteredEmployeeId, setFilteredEmployeeId] = useState<string | null>(null);
+
+  // Parse URL parameters for employee filtering
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const employeeId = queryParams.get('employeeId');
+    const dateParam = queryParams.get('date');
+    
+    if (employeeId) {
+      setFilteredEmployeeId(employeeId);
+    }
+    
+    if (dateParam) {
+      const parsedDate = new Date(dateParam);
+      if (!isNaN(parsedDate.getTime())) {
+        setSelectedDate(parsedDate);
+        setCurrentMonth(parsedDate);
+      }
+    }
+  }, [location.search]);
 
   // Get days for the current month
   const monthStart = startOfMonth(currentMonth);
@@ -41,8 +62,13 @@ const Dashboard = () => {
     setCurrentMonth(new Date());
   };
 
+  // Get filtered reports based on employee ID if specified
+  const filteredReports = filteredEmployeeId 
+    ? reports.filter(report => report.user_id === filteredEmployeeId)
+    : reports;
+
   const getReportForDay = (date: Date) => {
-    return reports.find(report => isSameDay(new Date(report.date), date));
+    return filteredReports.find(report => isSameDay(new Date(report.date), date));
   };
 
   const getStatusForDay = (date: Date): ReportStatus => {
@@ -78,23 +104,40 @@ const Dashboard = () => {
     setSelectedReport(null);
   };
 
+  const getPageTitle = () => {
+    if (filteredEmployeeId) {
+      return "Employee Reports";
+    }
+    return "Report Dashboard";
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <CalendarIcon className="h-6 w-6" />
-          <h1 className="text-3xl font-bold">Report Dashboard</h1>
+          <h1 className="text-3xl font-bold">{getPageTitle()}</h1>
         </div>
-        <Button 
-          onClick={() => {
-            setSelectedDate(new Date());
-            setSelectedReport(null);
-            setIsModalOpen(true);
-          }}
-          className="flex items-center gap-1"
-        >
-          <Plus className="h-4 w-4" /> New Report
-        </Button>
+        {!filteredEmployeeId && (
+          <Button 
+            onClick={() => {
+              setSelectedDate(new Date());
+              setSelectedReport(null);
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-1"
+          >
+            <Plus className="h-4 w-4" /> New Report
+          </Button>
+        )}
+        {filteredEmployeeId && (
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/employees')}
+          >
+            Back to Employees
+          </Button>
+        )}
       </div>
 
       <Card className="mb-6">
@@ -220,6 +263,8 @@ const Dashboard = () => {
         selectedDate={selectedDate}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+        disableEditing={!!filteredEmployeeId}
+        employeeId={filteredEmployeeId}
       />
     </div>
   );
