@@ -9,14 +9,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 
-// Mock data for employees
+// Mock data for employees with roles instead of positions
 const employees = [
-  { id: "1", name: "John Doe", position: "Frontend Developer" },
-  { id: "2", name: "Jane Smith", position: "UX Designer" },
-  { id: "3", name: "Mike Johnson", position: "Backend Developer" },
-  { id: "4", name: "Sarah Williams", position: "Project Manager" },
-  { id: "5", name: "Alex Brown", position: "QA Engineer" },
+  { id: "1", name: "John Doe", role: "Team Lead" },
+  { id: "2", name: "Jane Smith", role: "Employee" },
+  { id: "3", name: "Mike Johnson", role: "Employee" },
+  { id: "4", name: "Sarah Williams", role: "Manager" },
+  { id: "5", name: "Alex Brown", role: "Employee" },
 ];
 
 // Mock data for today's reports
@@ -121,7 +122,7 @@ const EmployeeManagement = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Position</TableHead>
+                    <TableHead>Role</TableHead>
                     <TableHead>Action</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -129,7 +130,14 @@ const EmployeeManagement = () => {
                   {employees.map((employee) => (
                     <TableRow key={employee.id}>
                       <TableCell>{employee.name}</TableCell>
-                      <TableCell>{employee.position}</TableCell>
+                      <TableCell>
+                        <Badge variant={
+                          employee.role === "Manager" ? "default" : 
+                          employee.role === "Team Lead" ? "secondary" : "outline"
+                        }>
+                          {employee.role}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <Button 
                           variant="outline" 
