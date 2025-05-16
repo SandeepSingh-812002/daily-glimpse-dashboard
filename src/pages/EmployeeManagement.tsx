@@ -5,11 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { useReports } from "@/context/ReportContext";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // Mock data for employees with roles instead of positions
 const employees = [
@@ -20,12 +20,67 @@ const employees = [
   { id: "5", name: "Alex Brown", role: "Employee" },
 ];
 
+// Mock data for today's reports
+const dummyTasks = [
+  { id: "t1", description: "Complete project documentation", status: "Completed", completion_percentage: 100 },
+  { id: "t2", description: "Attend team meeting", status: "Completed", completion_percentage: 100 },
+  { id: "t3", description: "Review pull requests", status: "In Progress", completion_percentage: 70 },
+  { id: "t4", description: "Fix bug in login flow", status: "In Progress", completion_percentage: 50 },
+  { id: "t5", description: "Prepare presentation slides", status: "Not Started", completion_percentage: 0 },
+];
+
+// Create dummy reports for today
+const generateDummyReports = () => {
+  const today = new Date();
+  
+  return [
+    {
+      id: "r1",
+      user_id: "1",
+      date: today.toISOString(),
+      created_at: today.toISOString(),
+      is_on_leave: false,
+      is_half_day: false,
+      tasks: [dummyTasks[0], dummyTasks[1]],
+    },
+    {
+      id: "r2",
+      user_id: "2",
+      date: today.toISOString(),
+      created_at: today.toISOString(),
+      is_on_leave: false,
+      is_half_day: true,
+      tasks: [dummyTasks[2]],
+    },
+    {
+      id: "r3",
+      user_id: "3",
+      date: today.toISOString(),
+      created_at: today.toISOString(),
+      is_on_leave: true,
+      is_half_day: false,
+      tasks: [],
+    },
+    {
+      id: "r4",
+      user_id: "4",
+      date: today.toISOString(),
+      created_at: today.toISOString(),
+      is_on_leave: false,
+      is_half_day: false,
+      tasks: [dummyTasks[3], dummyTasks[4]],
+    },
+  ];
+};
+
 const EmployeeManagement = () => {
   const [selectedEmployee, setSelectedEmployee] = useState<null | { id: string; name: string }>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { reports } = useReports();
-  const navigate = useNavigate();
+  
+  // We'll use the real reports from context but fallback to dummy data if empty
+  const allReports = reports.length > 0 ? reports : generateDummyReports();
 
   const handleEmployeeClick = (employee: { id: string; name: string }) => {
     setSelectedEmployee(employee);
@@ -36,13 +91,18 @@ const EmployeeManagement = () => {
     // Close the calendar dialog
     setIsCalendarOpen(false);
     
-    // Navigate to the dashboard with the employee's information
-    navigate(`/dashboard?employeeId=${employeeId}&date=${format(date, "yyyy-MM-dd")}`);
+    // Instead of navigating, we'll toggle a dialog - but kept comment for reference
+    // navigate(`/dashboard?employeeId=${employeeId}&date=${format(date, "yyyy-MM-dd")}`);
+    
+    // We'll open the calendar dialog with the selected employee and date
+    setSelectedEmployee({ id: employeeId, name: employees.find(e => e.id === employeeId)?.name || "Employee" });
+    setSelectedDate(date);
+    setIsCalendarOpen(true);
   };
 
   // Filter reports for selected employee and date
   const getEmployeeReportForDate = (employeeId: string, date: Date) => {
-    return reports.find(report => 
+    return allReports.find(report => 
       report.user_id === employeeId && 
       format(new Date(report.date), "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
     );
@@ -60,9 +120,10 @@ const EmployeeManagement = () => {
   // Get today's reports from actual report context
   const getTodaysReports = () => {
     const today = format(new Date(), "yyyy-MM-dd");
-    return reports.filter(report => 
+    const filtered = allReports.filter(report => 
       format(new Date(report.date), "yyyy-MM-dd") === today
     );
+    return filtered;
   };
 
   const todaysReports = getTodaysReports();
@@ -206,6 +267,9 @@ const EmployeeManagement = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{selectedEmployee?.name}'s Calendar</DialogTitle>
+            <DialogDescription>
+              Select a date to view or manage reports
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <Calendar
